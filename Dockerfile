@@ -291,4 +291,13 @@ RUN mkdir -p /opt/data
 # exit code. Without the wrapper-as-ENTRYPOINT, leading-dash args
 # like `--version` would be intercepted by /init's POSIX shell.
 ENTRYPOINT [ "/init", "/opt/hermes/docker/main-wrapper.sh" ]
-CMD [ ]
+# Default CMD: start the gateway. This is the right default for any
+# container-orchestrated deployment (Railway, Kubernetes, ECS, plain
+# `docker run`) where the gateway is the long-running server. Local
+# interactive use overrides via `docker run <image> chat` or similar,
+# which the wrapper routes correctly.
+#
+# Was `CMD [ ]` previously (which defaulted to interactive `hermes` CLI
+# and exited immediately on no-TTY deployments — see #29873 / Railway
+# deploy log analysis).
+CMD [ "gateway", "run" ]
