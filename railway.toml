@@ -1,0 +1,21 @@
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+# Override the entrypoint's default CMD (which is to launch the interactive
+# hermes CLI). On Railway we want the long-running gateway. The entrypoint
+# script (docker/entrypoint.sh) wraps args with `hermes`, so this becomes
+# `hermes gateway run` after the wrapper.
+#
+# The dashboard auto-starts in parallel via the HERMES_DASHBOARD=1 env var
+# (handled inside entrypoint.sh). Both processes are supervised by s6-overlay.
+startCommand = "gateway run"
+
+# Health check the gateway's /health endpoint.
+healthcheckPath = "/health"
+healthcheckTimeout = 30
+
+# Restart on crash but cap at 10 to avoid spin loops on broken state.
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10
