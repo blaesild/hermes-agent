@@ -3,14 +3,17 @@ builder = "DOCKERFILE"
 dockerfilePath = "Dockerfile"
 
 [deploy]
-# Override the entrypoint's default CMD (which is to launch the interactive
-# hermes CLI). On Railway we want the long-running gateway. The entrypoint
-# script (docker/entrypoint.sh) wraps args with `hermes`, so this becomes
-# `hermes gateway run` after the wrapper.
+# Railway's startCommand OVERRIDES the Dockerfile ENTRYPOINT entirely (in exec
+# form). The vanilla Dockerfile uses `ENTRYPOINT [ "/init",
+# "/opt/hermes/docker/main-wrapper.sh" ]` to boot s6-overlay and route args.
+# To preserve s6 supervision + the wrapper's argument routing on Railway, we
+# must explicitly invoke them here and append the gateway command as args.
 #
-# The dashboard auto-starts in parallel via the HERMES_DASHBOARD=1 env var
-# (handled inside entrypoint.sh). Both processes are supervised by s6-overlay.
-startCommand = "gateway run"
+# Result: /init boots s6-overlay (legacy-cont-init → dashboard service → user
+# bundle), then exec's main-wrapper.sh which dispatches `hermes gateway run`
+# as the supervised main program. The dashboard runs in parallel via the
+# HERMES_DASHBOARD=1 env var.
+startCommand = "/init /opt/hermes/docker/main-wrapper.sh gateway run"
 
 # Health check the gateway's /health endpoint.
 healthcheckPath = "/health"
